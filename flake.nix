@@ -1,0 +1,86 @@
+{
+  inputs = {
+    nixpkgs.url = "nixpkgs/nixos-unstable";
+    # follow `main` branch of this repository, considered being stable
+    nixos-raspberrypi.url = "github:nvmd/nixos-raspberrypi/main";
+  };
+
+  outputs =
+    {
+      nixpkgs,
+      nixos-raspberrypi,
+      ...
+    }@inputs:
+    {
+      nixosConfigurations.lithium = nixos-raspberrypi.lib.nixosSystemFull {
+        #   # nixpkgs = import nixpkgs {
+        #   #   localSystem = "x86_64-linux";
+        #   #   crossSystem = "aarch64-linux";
+        #   # };
+        #
+        #   nixpkgs = import inputs.nixos-raspberrypi.inputs.nixpkgs {
+        #     # localSystem = "x86_64-linux";
+        #     # crossSystem = "aarch64-linux";
+        #   };
+
+        specialArgs = inputs;
+
+        modules = [
+          (
+            {
+              config,
+              pkgs,
+              lib,
+              nixos-raspberrypi,
+              ...
+            }:
+            {
+              # Hardware specific configuration, see section below for a more complete
+              # list of modules
+              imports = with nixos-raspberrypi.nixosModules; [
+                raspberry-pi-5.base
+                raspberry-pi-5.page-size-16k
+                raspberry-pi-5.display-vc4
+                raspberry-pi-5.bluetooth
+                raspberry-pi-5.display-rp1
+                usb-gadget-ethernet
+                ./pi5-configtxt.nix
+              ];
+            }
+          )
+
+          (
+            {
+              config,
+              pkgs,
+              lib,
+              ...
+            }:
+            {
+              system.nixos.tags =
+                let
+                  cfg = config.boot.loader.raspberryPi;
+                in
+                [
+                  "raspberry-pi-${cfg.variant}"
+                  cfg.bootloader
+                  config.boot.kernelPackages.kernel.version
+                ];
+            }
+          )
+
+          ./configuration.nix
+        ];
+      };
+    };
+
+  # Optional: Binary cache for the flake
+  nixConfig = {
+    extra-substituters = [
+      "https://nixos-raspberrypi.cachix.org"
+    ];
+    extra-trusted-public-keys = [
+      "nixos-raspberrypi.cachix.org-1:4iMO9LXa8BqhU+Rpg6LQKiGa2lsNh/j2oiYLNOQ5sPI="
+    ];
+  };
+}
