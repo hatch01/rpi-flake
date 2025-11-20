@@ -4,12 +4,19 @@
     nixpkgs.url = "github:nvmd/nixpkgs/modules-with-keys-25.05";
     nixos-raspberrypi.url = "github:nvmd/nixos-raspberrypi/main";
     # nixos-raspberrypi.inputs.nixpkgs.follows = "nixpkgs";
+
+    agenix.url = "github:ryantm/agenix";
+    # optional, not necessary for the module
+    agenix.inputs.nixpkgs.follows = "nixpkgs";
+    # optionally choose not to download darwin deps (saves some resources on Linux)
+    agenix.inputs.darwin.follows = "";
   };
 
   outputs =
     {
       nixpkgs,
       nixos-raspberrypi,
+      agenix,
       ...
     }@inputs:
     let
@@ -47,6 +54,8 @@
                 # raspberry-pi-5.bluetooth
                 # raspberry-pi-5.display-rp1
                 # usb-gadget-ethernet
+                ./configuration.nix
+                agenix.nixosModules.default
                 ./pi5-configtxt.nix
               ];
             }
@@ -71,8 +80,6 @@
                 ];
             }
           )
-
-          ./configuration.nix
 
         ];
       };
